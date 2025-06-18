@@ -1,4 +1,5 @@
-
+#from bram credits to him
+#uncomment some lines for it to work!!
 LAST_CHAR_CODE=ord("Z")
 FIRST_CHAR_CODE=ord("A")
 CHAR_RANGE=LAST_CHAR_CODE-FIRST_CHAR_CODE+1
