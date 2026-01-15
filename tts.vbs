@@ -1,44 +1,77 @@
-' Text-to-Speech VBScript with Voice Selection
-
+' Text-to-Speech VBScript with File and Command-Line Input
 Option Explicit
 
-Dim speech, voices, voiceList, voiceIndex, i, selectedVoice
-Dim userText, voiceName
+Dim speech, voices
+Dim i, voiceIndex
+Dim inputText, inputFile
+Dim args
 
-' Create a SAPI.SpVoice object
 Set speech = CreateObject("SAPI.SpVoice")
-
-' Get list of available voices
 Set voices = speech.GetVoices
-voiceList = ""
+Set args = WScript.Arguments
 
-' Build a numbered list of voice names
-For i = 0 To voices.Count - 1
-    voiceList = voiceList & i & ": " & voices.Item(i).GetDescription & vbCrLf
-Next
+' -------------------------
+' Voice selection
+' -------------------------
+voiceIndex = 0 ' default voice
 
-' Ask the user to pick a voice
-voiceIndex = InputBox("Available Voices:" & vbCrLf & voiceList & vbCrLf & "Enter the number of the voice you want to use:", "Choose Voice", "0")
-
-' Validate the voice index
-If IsNumeric(voiceIndex) Then
-    voiceIndex = CInt(voiceIndex)
-    If voiceIndex >= 0 And voiceIndex < voices.Count Then
-        Set speech.Voice = voices.Item(voiceIndex)
-        voiceName = speech.Voice.GetDescription
-    Else
-        MsgBox "Invalid voice index. Default voice will be used."
+If args.Count >= 2 Then
+    If IsNumeric(args(args.Count - 1)) Then
+        voiceIndex = CInt(args(args.Count - 1))
     End If
-Else
-    MsgBox "Invalid input. Default voice will be used."
 End If
 
-' Ask for text input
-userText = InputBox("Enter the text you want to be spoken:", "Text to Speech")
-
-' Speak the text
-If Len(userText) > 0 Then
-    speech.Speak userText
-Else
-    MsgBox "No text entered."
+If voiceIndex >= 0 And voiceIndex < voices.Count Then
+    Set speech.Voice = voices.Item(voiceIndex)
 End If
+
+' -------------------------
+' Input handling
+' -------------------------
+inputText = ""
+
+If args.Count > 0 Then
+
+    ' File input mode
+    If args(0) = "-f" And args.Count >= 2 Then
+        inputFile = args(1)
+        inputText = ReadFile(inputFile)
+
+    ' Direct text input
+    Else
+        inputText = args(0)
+    End If
+
+Else
+    ' Interactive fallback
+    inputText = InputBox("Enter text to speak:", "Text to Speech")
+End If
+
+' -------------------------
+' Speak
+' -------------------------
+If Len(inputText) > 0 Then
+    speech.Speak inputText
+Else
+    WScript.Echo "No text provided."
+End If
+
+
+' =========================
+' File reading function
+' =========================
+Function ReadFile(path)
+    Dim fso, file, text
+    Set fso = CreateObject("Scripting.FileSystemObject")
+
+    If Not fso.FileExists(path) Then
+        WScript.Echo "File not found: " & path
+        WScript.Quit 1
+    End If
+
+    Set file = fso.OpenTextFile(path, 1)
+    text = file.ReadAll
+    file.Close
+
+    ReadFile = text
+End Function
